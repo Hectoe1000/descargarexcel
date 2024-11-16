@@ -1,0 +1,50 @@
+import pandas as pd
+import paramiko
+from io import BytesIO
+
+# Crear algunos datos de ejemplo
+data = {
+    'Nombre': ['Juan', 'Ana', 'Carlos', 'Luis'],
+    'Edad': [25, 30, 35, 40],
+    'Ciudad': ['Madrid', 'Barcelona', 'Valencia', 'Sevilla']
+}
+
+# Crear un DataFrame de pandas
+df = pd.DataFrame(data)
+
+# Crear un archivo Excel en memoria
+excel_buffer = BytesIO()
+
+# Guardar el DataFrame en el buffer (en memoria)
+df.to_excel(excel_buffer, index=False, engine='openpyxl')
+
+# Volver el puntero del buffer al inicio
+excel_buffer.seek(0)
+
+# Conexión SSH al servidor
+hostname = 'ssh-natureza.alwaysdata.net'  # Dirección IP o dominio del servidor
+port = 22  # El puerto por defecto para SSH es 22
+username = 'natureza_anon'
+password = '(123456)'  # Si es posible, es recomendable usar autenticación con claves
+
+# Ruta donde guardar el archivo en el servidor
+ruta_remota = 'Gokuarchivo.xlsx'
+
+# Crear una instancia SSHClient
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(
+    paramiko.AutoAddPolicy())  # Agregar automáticamente la clave del host
+
+# Conectarse al servidor
+ssh.connect(hostname, port=port, username=username, password=password)
+
+# Usar SFTP para transferir el archivo en memoria
+sftp = ssh.open_sftp()
+with sftp.open(ruta_remota, 'wb') as remote_file:
+    remote_file.write(excel_buffer.read(
+    ))  # Escribir el contenido del buffer en el archivo remoto
+sftp.close()
+
+# Cerrar la conexión SSH
+
+print(f'Archivo subido con éxito a {ruta_remota}')
